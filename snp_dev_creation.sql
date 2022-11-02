@@ -1,19 +1,22 @@
-CREATE  TABLE  group (
+-- CREACION DE TABLA company_group
+CREATE TABLE company_group (
     id_group BIGSERIAL NOT NULL PRIMARY KEY,
     group_name VARCHAR (50) NOT NULL,
     group_alias VARCHAR (6) NOT NULL,
     contact_mail VARCHAR (50) NOT NULL
 );
-ALTER TABLE group ADD CONSTRAINT unique_group UNIQUE (id_group, group_name, group_alias);
+ALTER TABLE company_group ADD CONSTRAINT unique_group UNIQUE (id_group, group_name, group_alias);
 
+-- CRACION DE TABLA company
 CREATE TABLE company (
     id_comp BIGSERIAL NOT NULL PRIMARY KEY,
-    id_group BIGINT REFERENCES group(id_group) NOT NULL,
+    id_group BIGINT REFERENCES company_group(id_group) NOT NULL,
     comp_name VARCHAR (50) NOT NULL,
     comp_alias VARCHAR (6) NOT NULL
 );
 ALTER TABLE company ADD CONSTRAINT unique_company UNIQUE (id_comp, id_group, comp_name, comp_alias);
 
+--CREACION DE TABLA simple_loan
 CREATE TABLE simple_loan (
     id_loan BIGSERIAL NOT NULL PRIMARY KEY,
     id_comp BIGINT REFERENCES company(id_comp) NOT NULL,
@@ -217,6 +220,7 @@ ALTER TABLE simple_loan ADD CONSTRAINT list_loan_type_simple CHECK (
     loan_type = 'Maquinaria-Equipo'
 );
 
+--CREACION DE TABLA revolver_credit
 CREATE TABLE revolver_credit (
     id_revolver BIGSERIAL NOT NULL PRIMARY KEY,
     id_comp BIGINT REFERENCES company(id_comp) NOT NULL,
@@ -413,10 +417,11 @@ ALTER TABLE revolver_credit ADD CONSTRAINT list_revolver_currency CHECK (
 );
 ALTER TABLE revolver_credit ADD CONSTRAINT list_int_type_revolver CHECK (int_type = 'FIX' OR int_type = 'VAR');
 
+--CREACION DE TABLA credit_card
 CREATE TABLE credit_card (
     id_credit_card BIGSERIAL NOT NULL PRIMARY KEY,
     id_comp BIGINT REFERENCES company(id_comp) NOT NULL,
-    card_num INTEGER,
+    card_num NUMERIC (16,0),
     card_alias VARCHAR (10) NOT NULL,
     currency VARCHAR(3),
     credit_limit NUMERIC (20,2) NOT NULL,
@@ -609,6 +614,7 @@ ALTER TABLE credit_card ADD CONSTRAINT list_credit_card_currency CHECK (
     currency = 'ZWD'
 );
 
+--CREACION DE TABLA leasing
 CREATE TABLE leasing (
     id_leasing BIGSERIAL NOT NULL PRIMARY KEY,
     id_comp BIGINT REFERENCES company(id_comp) NOT NULL,
@@ -805,9 +811,8 @@ ALTER TABLE leasing ADD CONSTRAINT list_leasing_currency CHECK (
     currency = 'ZWD'
 );
 ALTER TABLE leasing ADD CONSTRAINT list_int_type_leasing CHECK (int_type = 'FIX' OR int_type = 'VAR');
-ALTER TABLE leasing ADD CONSTRAINT list_loan_type_leasing CHECK (
-    loan_type = 'Hipotecario' OR 
-    loan_type = 'Automotriz' OR 
-    loan_type = 'Capital de trabajo' OR 
-    loan_type = 'Maquinaria-Equipo'
+ALTER TABLE leasing ADD CONSTRAINT list_lease_type CHECK (
+    lease_type = 'Hipotecario' OR 
+    lease_type = 'Automotriz' OR 
+    lease_type = 'Maquinaria-Equipo'
 );
