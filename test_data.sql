@@ -33,3 +33,4 @@ VALUES (1, 1234123412341234, 'c1card', 'MXN', 114300, .46, '2021-10-21', '2021-1
 --DATOS DE TABLA leasing
 INSERT INTO leasing (id_comp, leasing_num, leasing_alias, currency, leasing_amount, int_type, int_rate, months_term, financial_entity, lease_type, date_start, date_end)
 VALUES (3, 'C3L001', 'c3leas1', 'MXN', 350000, 'FIX', .13, 36, 'BANCREA', 'Automotriz', '2021-02-14', '2024-02-14');
+

@@ -18,7 +18,7 @@ ALTER TABLE company ADD CONSTRAINT unique_company UNIQUE (id_comp, id_group, com
 
 --CREACION DE TABLA simple_loan
 CREATE TABLE simple_loan (
-    id_loan BIGSERIAL NOT NULL PRIMARY KEY,
+    id_simple_loan BIGSERIAL NOT NULL PRIMARY KEY,
     id_comp BIGINT REFERENCES company(id_comp) NOT NULL,
     loan_num VARCHAR (50),
     loan_alias VARCHAR (10) NOT NULL,
@@ -32,7 +32,7 @@ CREATE TABLE simple_loan (
     date_start DATE NOT NULL,
     date_end DATE NOT NULL
 );
-ALTER TABLE simple_loan ADD CONSTRAINT unique_simple_keys UNIQUE (id_loan);
+ALTER TABLE simple_loan ADD CONSTRAINT unique_simple_keys UNIQUE (id_simple_loan);
 ALTER TABLE simple_loan ADD CONSTRAINT list_simple_currency CHECK (
     currency = 'AUD' OR 
     currency = 'GBP' OR 
@@ -816,3 +816,30 @@ ALTER TABLE leasing ADD CONSTRAINT list_lease_type CHECK (
     lease_type = 'Automotriz' OR 
     lease_type = 'Maquinaria-Equipo'
 );
+
+CREATE TABLE simple_payments (
+    uid_simple_payment UUID NOT NULL PRIMARY KEY,
+    id_simple_loan BIGINT REFERENCES simple_loan(id_simple_loan) NOT NULL,
+    payment_date DATE NOT NULL,
+    capital_amortization NUMERIC(20,2) NOT NULL,
+    interest_payment NUMERIC(20,2) NOT NULL
+);
+ALTER TABLE simple_payments ADD CONSTRAINT unique_id_simple_payment UNIQUE (uid_simple_payment);
+
+CREATE TABLE revolver_dispositions (
+    uid_revolver_disposition UUID NOT NULL PRIMARY KEY,
+    id_revolver BIGINT REFERENCES revolver_credit(id_revolver) NOT NULL,
+    disposition_date DATE NOT NULL,
+    payment_date DATE NOT NULL,
+    disposition_amount NUMERIC(20,2) NOT NULL
+);
+ALTER TABLE revolver_dispositions ADD CONSTRAINT unique_id_revolver_disposition UNIQUE (uid_revolver_disposition);
+
+CREATE TABLE leasing_payments (
+    uid_leasing_payment UUID NOT NULL PRIMARY KEY,
+    id_leasing BIGINT REFERENCES leasing(id_leasing) NOT NULL,
+    payment_date DATE NOT NULL,
+    capital_amortization NUMERIC(20,2) NOT NULL,
+    interest_payment NUMERIC(20,2) NOT NULL
+);
+ALTER TABLE leasing_payments ADD CONSTRAINT unique_id_leasing_payments UNIQUE (uid_leasing_payment);
