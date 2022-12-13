@@ -2,26 +2,26 @@
 CREATE TABLE company_group (
     id_group BIGSERIAL NOT NULL PRIMARY KEY,
     group_name VARCHAR (50) NOT NULL,
-    group_alias VARCHAR (6) NOT NULL,
+    alias VARCHAR (6) NOT NULL,
     contact_mail VARCHAR (50) NOT NULL
 );
-ALTER TABLE company_group ADD CONSTRAINT unique_group UNIQUE (id_group, group_name, group_alias);
+ALTER TABLE company_group ADD CONSTRAINT unique_group UNIQUE (id_group, group_name, alias);
 
 -- CRACION DE TABLA company
 CREATE TABLE company (
     id_comp BIGSERIAL NOT NULL PRIMARY KEY,
     id_group BIGINT REFERENCES company_group(id_group) NOT NULL,
     comp_name VARCHAR (50) NOT NULL,
-    comp_alias VARCHAR (6) NOT NULL
+    alias VARCHAR (6) NOT NULL
 );
-ALTER TABLE company ADD CONSTRAINT unique_company UNIQUE (id_comp, id_group, comp_name, comp_alias);
+ALTER TABLE company ADD CONSTRAINT unique_company UNIQUE (id_comp, id_group, comp_name, alias);
 
 --CREACION DE TABLA simple_loan
 CREATE TABLE simple_loan (
     id_simple_loan BIGSERIAL NOT NULL PRIMARY KEY,
     id_comp BIGINT REFERENCES company(id_comp) NOT NULL,
     loan_num VARCHAR (50),
-    loan_alias VARCHAR (10) NOT NULL,
+    alias VARCHAR (10) NOT NULL,
     currency VARCHAR(3),
     loan_amount NUMERIC (20,2) NOT NULL,
     int_type VARCHAR (3) NOT NULL,
@@ -225,7 +225,7 @@ CREATE TABLE revolver_credit (
     id_revolver BIGSERIAL NOT NULL PRIMARY KEY,
     id_comp BIGINT REFERENCES company(id_comp) NOT NULL,
     credit_num VARCHAR (50),
-    credit_alias VARCHAR (10) NOT NULL,
+    alias VARCHAR (10) NOT NULL,
     currency VARCHAR(3),
     credit_limit NUMERIC (20,2) NOT NULL,
     int_type VARCHAR (3) NOT NULL,
@@ -422,7 +422,7 @@ CREATE TABLE credit_card (
     id_credit_card BIGSERIAL NOT NULL PRIMARY KEY,
     id_comp BIGINT REFERENCES company(id_comp) NOT NULL,
     card_num NUMERIC (16,0),
-    card_alias VARCHAR (10) NOT NULL,
+    alias VARCHAR (10) NOT NULL,
     currency VARCHAR(3),
     credit_limit NUMERIC (20,2) NOT NULL,
     int_rate NUMERIC (6,4) NOT NULL,
@@ -619,7 +619,7 @@ CREATE TABLE leasing (
     id_leasing BIGSERIAL NOT NULL PRIMARY KEY,
     id_comp BIGINT REFERENCES company(id_comp) NOT NULL,
     leasing_num VARCHAR (50),
-    leasing_alias VARCHAR (10) NOT NULL,
+    alias VARCHAR (10) NOT NULL,
     currency VARCHAR(3),
     leasing_amount NUMERIC (20,2) NOT NULL,
     int_type VARCHAR (3) NOT NULL,
@@ -818,28 +818,31 @@ ALTER TABLE leasing ADD CONSTRAINT list_lease_type CHECK (
 );
 
 CREATE TABLE simple_payments (
-    uid_simple_payment UUID NOT NULL PRIMARY KEY,
+    id_simple_payment BIGSERIAL NOT NULL PRIMARY KEY,
     id_simple_loan BIGINT REFERENCES simple_loan(id_simple_loan) NOT NULL,
+    period_number INTEGER NOT NULL,
     payment_date DATE NOT NULL,
     capital_amortization NUMERIC(20,2) NOT NULL,
     interest_payment NUMERIC(20,2) NOT NULL
 );
-ALTER TABLE simple_payments ADD CONSTRAINT unique_id_simple_payment UNIQUE (uid_simple_payment);
+ALTER TABLE simple_payments ADD CONSTRAINT unique_id_simple_payment UNIQUE (id_simple_payment);
 
 CREATE TABLE revolver_dispositions (
-    uid_revolver_disposition UUID NOT NULL PRIMARY KEY,
+    id_revolver_disposition BIGSERIAL NOT NULL PRIMARY KEY,
     id_revolver BIGINT REFERENCES revolver_credit(id_revolver) NOT NULL,
     disposition_date DATE NOT NULL,
     payment_date DATE NOT NULL,
-    disposition_amount NUMERIC(20,2) NOT NULL
+    disposition_amount NUMERIC(20,2) NOT NULL,
+    interest_amount NUMERIC(20,2) NOT NULL
 );
-ALTER TABLE revolver_dispositions ADD CONSTRAINT unique_id_revolver_disposition UNIQUE (uid_revolver_disposition);
+ALTER TABLE revolver_dispositions ADD CONSTRAINT unique_id_revolver_disposition UNIQUE (id_revolver_disposition);
 
 CREATE TABLE leasing_payments (
-    uid_leasing_payment UUID NOT NULL PRIMARY KEY,
+    id_leasing_payment BIGSERIAL NOT NULL PRIMARY KEY,
     id_leasing BIGINT REFERENCES leasing(id_leasing) NOT NULL,
+    period_number INTEGER NOT NULL,
     payment_date DATE NOT NULL,
     capital_amortization NUMERIC(20,2) NOT NULL,
     interest_payment NUMERIC(20,2) NOT NULL
 );
-ALTER TABLE leasing_payments ADD CONSTRAINT unique_id_leasing_payments UNIQUE (uid_leasing_payment);
+ALTER TABLE leasing_payments ADD CONSTRAINT unique_id_leasing_payments UNIQUE (id_leasing_payment);

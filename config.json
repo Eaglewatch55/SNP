@@ -1,0 +1,11 @@
+{
+    "_default": {
+        "1": {
+            "host" : "localhost",
+            "port" : 5432,
+            "user" : "py_connection",
+            "password" : "testpass",
+            "db_name" : "snp_dev" 
+        }
+    }
+}
