@@ -44,15 +44,16 @@ def lists_to_string (list1 = [], list2=[], separator=""):
         
 
 
-#! MEJORAR CLARIDAD Y VERIFICAR FUNCIONAMIENTO
+#! MEJORAR CLARIDAD
 def psql_connection (action, table, columns, **extra):
     elements_validation = lambda list_val: list_val if list_val is not None else ""
 
-    
-    action_menu = { "SELECT": f"SELECT {string_for_sql(columns)} FROM {table}",
+    # WHERE 'conditions' MUST be a string
+    action_menu = { "SELECT_ALL": f"SELECT {string_for_sql(columns)} FROM {table}",
+                    "SELECT_WHERE": f"SELECT {string_for_sql(columns)} FROM {table} WHERE {extra.get('conditions')}",
                     "INSERT": f"INSERT INTO {table} ({string_for_sql(columns)}) VALUES ({string_for_sql(elements_validation(extra.get('values')))})",
-                    "UPDATE": f"UPDATE {table} SET {string_for_sql(lists_to_string(columns,elements_validation(extra.get('values')),'='))} WHERE {extra.get('conditions')}", #'conditions' MUST be a string
-                    "DELETE": f"DELETE FROM {table} WHERE {extra.get('conditions')}"
+                    "UPDATE": f"UPDATE {table} SET {string_for_sql(lists_to_string(columns,elements_validation(extra.get('values')),'='))} WHERE {extra.get('conditions')}",
+                    "DELETE": f"DELETE FROM {table} WHERE {extra.get('conditions')}",
                     }
     
     with psycopg2.connect(connection_address) as connection:
@@ -60,31 +61,16 @@ def psql_connection (action, table, columns, **extra):
             SQL = action_menu[action]
             print(SQL)
             cursor.execute(SQL)
-            result = cursor.fetchall() if action == "SELECT" else "Finished"
-
+            result = cursor.fetchall() if action.startswith("SELECT") else []
     return (result)
 
 
 #* GUI DESIGN ---------------------------------------------------------------------------------------------------
 #* TKINTER FUNCTIONS
-def loan_list_join (selection):
-        
-        print(selection)
-        ltype = {"Simple": "simple_loan","Revolvente":"revolver","Arrendamiento":"leasing"}  
-        loan_type = dict_loan_tables.get(selection)
-        
-        #QUERY WITH  VARIABLE'ID' NAME
-        query = psql_connection("SELECT",loan_type,["id_"+ltype[selection],"alias","financial_entity"])
-    
-        # CONVERT 'ID' TO STRING
-        for i in range(len(query)): 
-            query[i][0] = str(query[i][0])
-        
-        # print(query)         
-        select_loan_menu = [" - ".join(query[i]) for i in range(len(query))]
-        return select_loan_menu
-    
+#LAMBDA
+id_extractor = lambda text: str(text.split(" - ")[0])
 
+#FUNCTIONS
 def add_simple_payment ():
     
     period = int(add_period.get())
@@ -95,10 +81,10 @@ def add_simple_payment ():
     tx_simp_added.insert(END,f"{period}\t|{bx_payment_date.get()}\t\t|{capital:,}\t\t|{interest:,}\t\t|{total:,}\n",)
     add_period.set(str(period+1))
     
-    id= cb_sla_select_loan.get()
-
-    id = id.split(" - ")
-    id = str(id[0])
+    id = id_extractor(cb_sla_select_loan.get())
+    # id= cb_sla_select_loan.get()
+    # id = id.split(" - ")
+    # id = str(id[0])
     
     psql_connection("INSERT",
                     dict_loan_payment_tables[cb_sla_type.get()],
@@ -114,11 +100,10 @@ def add_revolver_disposition():
     total = capital + interest
     tx_rev_added.insert(END,f"{bx_rev_disposition_date.get()}\t\t|{bx_rev_payment_date.get()}\t\t|{capital:,}\t\t|{interest:,}\t\t|{total:,}\n",)
     
-    
-    id= cb_rev_select_loan.get()
-
-    id = id.split(" - ")
-    id = str(id[0])
+    id= id_extractor(cb_rev_select_loan.get())
+    # id= cb_rev_select_loan.get()
+    # id = id.split(" - ")
+    # id = str(id[0])
     
     psql_connection("INSERT",
                     dict_loan_payment_tables["Revolvente"],
@@ -126,14 +111,28 @@ def add_revolver_disposition():
                     values = [id,f"'{disposition_date}'",f"'{payment_date}'",capital,interest])
 
 #* EVENTS
-def simp_clear_box (event):
+#   DELETE PREVIOUS TEXT AND AUTOFILLS FOR THE SELECTED LOAN
+def simp_txt_autofill (event):
     
     selection = str(cb_sla_type.get())
-    dict_tx_added = {"Simple": "Periodo\t|F. Pago\t\t|Capital\t\t|Interés\t\t|Total\n",
-                     "Arrendamiento":"Periodo\t|F. Pago\t\t|Amortización\t\t|Interés\t\t|Total\n"}
+    dict_tx_added = {"Simple": "ID\t|Periodo\t|F. Pago\t\t|Capital\t\t|Interés\t\t|Total\n",
+                     "Arrendamiento":"ID\t|Periodo\t|F. Pago\t\t|Amortización\t\t|Interés\t\t|Total\n"}
+    dict_type_id_loan= {"Simple" : "id_simple_loan", "Arrendamiento": "id_leasing"}
     
+    selected_loan = cb_sla_select_loan.get()
     tx_simp_added.delete("1.0",END)
     tx_simp_added.insert("1.0", dict_tx_added[selection])
+    
+    payments = psql_connection("SELECT_WHERE",
+                            dict_loan_payment_tables[selection],
+                            dict_payment_columns[selection],
+                            conditions = f"{dict_type_id_loan[selection]}={id_extractor(selected_loan)}")
+    if payments is not None:
+        for row in payments:
+                total = row[3]+row[4]
+                tx_simp_added.insert(END,f"{row[0]}\t|{row[1]}\t|{row[2]}\t\t|{row[3]}\t\t|{row[4]}\t\t|{total}\n")
+        
+                        
 
 def rev_clear_box (event):
     tx_rev_added.delete("1.0",END)
@@ -145,6 +144,22 @@ def sla_type_selected (event):
     selection = str(cb_sla_type.get())
     cb_sla_select_loan["values"] = loan_list_join(selection) 
 
+def loan_list_join (selection):
+        
+        dict_loan_type = {"Simple": "simple_loan","Revolvente":"revolver","Arrendamiento":"leasing"}  
+        loan_type = dict_loan_tables.get(selection)
+        
+        #QUERY WITH  VARIABLE'ID' NAME
+        query = psql_connection("SELECT_ALL",loan_type,["id_"+dict_loan_type[selection],"alias","financial_entity"])
+    
+        # CONVERT 'ID' TO STRING
+        for i in range(len(query)): 
+            query[i][0] = str(query[i][0])
+        
+        # print(query)         
+        select_loan_menu = [" - ".join(query[i]) for i in range(len(query))]
+        return select_loan_menu
+    
 
 #WINDOW
 window = Tk()
@@ -175,13 +190,13 @@ ltab_add_simple = ttk.Frame(loan_tab_control)
 loan_tab_control.add(ltab_add_simple, text="Añadir crédito")
 
 ltab_add_simple_payments = ttk.Frame(loan_tab_control)
-loan_tab_control.add(ltab_add_simple_payments, text="A. Pagos Simples")
+loan_tab_control.add(ltab_add_simple_payments, text="Pagos Simples")
 
 ltab_add_revolver_disposition = ttk.Frame(loan_tab_control)
-loan_tab_control.add(ltab_add_revolver_disposition, text="A. Pagos Revolventes")
+loan_tab_control.add(ltab_add_revolver_disposition, text="Pagos Revolventes")
 
-ltab_review_loan = ttk.Frame(loan_tab_control)
-loan_tab_control.add(ltab_review_loan, text="Revisar-Editar")
+# ltab_review_loan = ttk.Frame(loan_tab_control)
+# loan_tab_control.add(ltab_review_loan, text="Revisar-Editar")
 
 loan_tab_control.pack(fill="both")
 
@@ -240,7 +255,7 @@ cb_sla_type = ttk.Combobox(ltab_add_simple_payments, values= ["Simple", "Arrenda
 cb_sla_type.bind("<<ComboboxSelected>>",sla_type_selected)
 lb_sla_select_loan = Label(ltab_add_simple_payments, text="Crédito:")
 cb_sla_select_loan = ttk.Combobox(ltab_add_simple_payments, values=[])
-cb_sla_select_loan.bind("<<ComboboxSelected>>",simp_clear_box)
+cb_sla_select_loan.bind("<<ComboboxSelected>>",simp_txt_autofill)
 
 lb_period = Label(ltab_add_simple_payments, text="Periodo")
 lb_payment_date = Label(ltab_add_simple_payments, text="F. Pago")
@@ -313,8 +328,8 @@ tx_rev_added.grid(row=4 ,column=0 ,columnspan=5)
 
 #--- --- SIMPLE LOAN REVIEW TAB
 
-lb_loan_review = Label(ltab_review_loan, text="Crédito:")
-cb_loan_review = Label(ltab_review_loan, )
+# lb_loan_review = Label(ltab_review_loan, text="Crédito:")
+# cb_loan_review = Label(ltab_review_loan, )
 
 window.mainloop()
 
